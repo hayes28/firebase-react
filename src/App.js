@@ -3,42 +3,39 @@ import './App.css';
 import { Auth } from './components/auth';
 import { db } from './config/firebase';
 import { getDocs, collection } from 'firebase/firestore';
+import { MovieForm } from './components/MovieForm';
+import { MovieList } from './components/MovieList';
 
 function App() {
   const [movieList, setMovieList] = useState([]);
+  const movieCollectionRef = collection(db, 'movies');
 
-  const movieCollectionRef = new collection(db, 'movies');
+  const fetchAndSetMovies = async () => {
+    try {
+      const data = await getDocs(movieCollectionRef);
+      const filterData = data.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      }));
+      setMovieList(filterData);
+    } catch (error) {
+      console.log(error);
+      // Consider setting some error state here and displaying to the user.
+    }
+  };
 
   useEffect(() => {
-    const getMovieList = async () => {
-      // READ THE DATA
-      // SET THE MOVIE LIST
-      try {
-        const data = await getDocs(movieCollectionRef);
-        const filterData = data.docs.map((doc) => ({
-          ...doc.data(),
-          id: doc.id,
-        }));
-        setMovieList(filterData);
-
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    getMovieList();
+    fetchAndSetMovies();
   }, []);
-  return (<div className='App'>
-    <Auth />
-    <div>
-      {movieList.map((movie) => (
-        <div>
-          <h1 style={{color: movie.receivedAnOscar ? "green" : "red"}}>{movie.title}</h1>
-          <p> Date: {movie.releaseDate}</p>
-        </div>
-      ))}
+
+  return (
+    <div className='App'>
+      <Auth />
+      <MovieForm movieCollectionRef={movieCollectionRef} getMovieList={fetchAndSetMovies} />
+      <MovieList movieList={movieList} getMovieList={fetchAndSetMovies} />
     </div>
-  </div>
   );
 }
 
 export default App;
+
